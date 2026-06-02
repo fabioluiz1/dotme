@@ -68,7 +68,16 @@ Create directory: `~/job-applications/[COMPANY_NAME]/`
 - AI forward-looking statement: excitement to spearhead AI initiatives, integrate AI into development workflows
 - **Include soft skills from JD** - Weave in exact phrases like "communication skills", "fast-paced environment", "high-agency", "attention to detail" naturally
 
-**Technical Skills (grouped):**
+**Technical Skills (bullet list format):**
+- Use markdown bullet list (dashes), NOT bold-label format
+- Format each category as: `- Category: skill1, skill2, skill3`
+- Example:
+  ```
+  ## Technical Skills
+  - Languages: TypeScript, JavaScript, Ruby, Python, SQL, HTML5, CSS3
+  - Frontend: React, Next.js, Hotwire, Stimulus, Component-based UI Architecture
+  - Backend: Node.js, Ruby on Rails, Sidekiq, REST APIs, GraphQL, Webhooks
+  ```
 - Prioritize skills mentioned in job description FIRST
 - Group by category: Languages, Frameworks, Databases, Cloud/DevOps, Testing
 
@@ -115,6 +124,19 @@ Bad: "Responsible for Ruby upgrades" (no STAR, no metrics)
   - Include in Summary section and experience bullets where natural
   - Multi-word phrases must appear verbatim (not paraphrased)
 
+#### 3.5 Content Density & 2-Page Calibration (LEARNED RULES)
+**Target: the exported PDF fills 1.9-2.0 pages. Never less than 1.9, never more than 2.0.**
+
+These rules exist because past runs failed two ways: (a) verbose content overflowed to 3 pages, and (b) over-aggressive trimming collapsed it to 1.5 pages of crushed, unreadable bullets that also hurt ATS.
+
+- **One accomplishment per bullet.** NEVER merge multiple accomplishments into a run-on sentence with semicolons to save space. Distinct, keyword-rich bullets read better AND score better in ATS (ATS rewards discrete bullets).
+- **Fix length with CONTENT, not by crushing bullets:**
+  - **Too long (3 pages):** remove the least-relevant bullets/roles entirely (oldest, least JD-relevant first). Keep the surviving bullets full and well-written.
+  - **Too short (<1.9 pages):** restore detail to existing bullets or add back a relevant bullet/role. Do NOT inflate with whitespace or filler.
+- **Spacing is the calibrator's job, not yours.** The build script (Step 6b) auto-tunes line-height to land the fill at 1.9-2.0 pages. Your job is to get the CONTENT volume right so the calibrator has something in range to find.
+- Keep bullets readable: distinct action verb start, real metrics, MAX 40 words (constraint #7).
+- A typical 2-page resume = header + title/keywords + Summary + Technical Skills (~8 rows) + AI Innovation (3-4 bullets) + 4 roles (3-5 bullets each) + Education + Recent Learning. Adjust role/bullet count to hit the page target.
+
 ### Step 4: Ask Clarifying Questions
 
 Before generating, ALWAYS ask about:
@@ -129,7 +151,71 @@ Before generating, ALWAYS ask about:
 1. Generate resume in Markdown format
 2. Save to: `~/job-applications/[COMPANY_NAME]/RESUME.md`
 
-### Step 6: Save to HubSpot
+### Step 6: Import to Google Docs
+
+Import the resume to Google Docs and apply professional formatting via Apps Script.
+
+**IMPORTANT: This step MUST use the Apps Script formatter. Do NOT attempt alternative approaches (HTML import, manual formatting, etc). If the script fails, follow the troubleshooting steps below.**
+
+1. **Import markdown** using `import_to_google_doc`:
+   - `user_google_email`: use the email from the resume header
+   - `file_name`: "[COMPANY_NAME] - Resume"
+   - `content`: the full RESUME.md content
+   - `source_format`: "markdown"
+   - Save the returned `Document ID` for the next step.
+
+2. **Apply formatting** using `run_script_function`:
+   - `script_id`: `1NcUu0AbvreKfwBlWztpNYonCp3vG5h7A4xvXaOj2HkfpMTgA3EHCMDkV`
+   - `function_name`: `resumeFormatter`
+   - `parameters`: `["<DOCUMENT_ID from step 1>"]`
+   - `dev_mode`: `true`
+
+   This applies: Arial font, H1 18pt, H2 12pt, H3 10.5pt, body 10pt, contact/keywords 9pt, compact spacing.
+
+   **Troubleshooting (404 "Requested entity was not found"):**
+   The Apps Script API can return intermittent 404 errors. Follow these steps IN ORDER:
+   1. **Retry** the exact same `run_script_function` call 2-3 times (the API is intermittent)
+   2. If still 404, ask the user to **archive all old deployments and create a fresh one**:
+      - Open: https://script.google.com/d/1NcUu0AbvreKfwBlWztpNYonCp3vG5h7A4xvXaOj2HkfpMTgA3EHCMDkV/edit
+      - Deploy > Manage deployments > Archive ALL existing deployments
+      - Deploy > New deployment > API Executable > Deploy
+      - Then retry `run_script_function` (must use `dev_mode: true`)
+   3. If still failing, verify the script exists with `get_script_project` using the same script_id
+   4. Check Apps Script API settings:
+      - GCP API: https://console.developers.google.com/apis/api/script.googleapis.com/overview?project=558261890284
+      - User settings: https://script.google.com/home/usersettings
+
+3. **Verify**: The final Google Doc should fit in 2 pages. If it exceeds 2 pages, reduce content in the least relevant experience bullets and re-import.
+
+### Step 6b: Export Print-Ready PDF (auto-calibrated to 1.9-2.0 pages)
+
+Produce the final PDF that the user actually submits. This step is automatic via a
+self-calibrating build script. **Always run it after RESUME.md is finalized.**
+
+Pipeline: pandoc (markdown -> HTML) -> print CSS -> headless Chrome (-> PDF). It sweeps
+line-height and picks the spacing that fills the last page ~88-97% (so total = 1.9-2.0
+pages): no wasted whitespace, no overflow to a 3rd page. Arial 10pt, H1 19 / H2 12 / H3 11pt.
+
+**Run:**
+```bash
+python3 ~/.me/claude/commands/prep-for-job/build_resume_pdf.py \
+  ~/job-applications/[COMPANY_NAME]/RESUME.md \
+  ~/job-applications/[COMPANY_NAME]/[Company]-Resume-[FullName].pdf
+```
+
+**Requirements** (all on macOS via Homebrew): `pandoc`, Google Chrome, `poppler`
+(provides `pdfinfo` + `pdftoppm`), and Pillow (`pip3 install Pillow`).
+
+**Reading the result:**
+- `OK: 2 pages, last page NN% full` -> done.
+- `UNDER-FILLED` -> content is too short for 2 pages. Go back to RESUME.md and ADD
+  detail per rule 3.5 (restore trimmed bullets / expand). Do NOT inflate spacing. Re-run.
+- `FAIL: could not reach exactly 2 pages` -> content too long. TRIM least-relevant
+  bullets per rule 3.5 (do NOT crush into run-ons). Re-run.
+
+**Verify visually** (optional): `pdftoppm -png -r 110 <pdf> /tmp/chk` then read the PNGs.
+
+### Step 7: Save to HubSpot
 
 Create a note on the deal using `hubspot-create-engagement`:
 
@@ -148,7 +234,7 @@ Create a note on the deal using `hubspot-create-engagement`:
 
 **Note:** Convert markdown to HTML for better rendering in HubSpot.
 
-### Step 7: Output Summary
+### Step 8: Output Summary
 
 ```
 ## Resume Generated
@@ -157,6 +243,8 @@ Create a note on the deal using `hubspot-create-engagement`:
 
 **Output:**
 - ~/job-applications/[company]/RESUME.md
+- ~/job-applications/[company]/[Company]-Resume-[FullName].pdf ([N] pages, [NN]% fill)
+- Google Doc: [link]
 
 **Keywords Matched:** [X] of [Y] from job description
 ```
@@ -164,7 +252,7 @@ Create a note on the deal using `hubspot-create-engagement`:
 ### Important Constraints
 
 1. **NEVER FABRICATE** - If information isn't in the LinkedIn profile, ASK the user
-2. **Keep to 1-2 pages** - Be ruthless about what to include
+2. **Fill 1.9-2.0 pages exactly** - Never less than 1.9 (looks thin, wastes space), never more than 2.0. Fix length with content volume (add/remove bullets), NOT by crushing bullets into run-ons or inflating whitespace. The Step 6b script calibrates spacing automatically. See rule 3.5.
 3. **Quantify everything** - If no metric exists, ask the user
 4. **Match the job** - Every bullet should relate to job requirements where possible
 5. **Active voice** - "Built", "Led", "Designed" not "Was responsible for"
