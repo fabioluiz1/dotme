@@ -25,19 +25,22 @@ The subagent should:
 1. Read `~/garden/drafts/YYYYMMDD-journal-plan.md` (today's date)
 2. Find Entry N in the plan
 3. Read only the drafts listed for that entry
-4. Load the journal-writer skill from `~/.me/claude/skills/journal-writer/SKILL.md`
-5. Synthesize those drafts into a focused journal entry
-6. Follow the voice, style, and structure from the skill
+4. Load the journal-router skill from `~/.me/claude/skills/journal-router/SKILL.md`. It classifies
+   the draft's voice (tutorial vs first-person reflection vs both) and loads the right writing
+   skill: `tutorial-writer` and/or `journal-writer`. Do not hardcode a voice; let the router decide.
+5. Synthesize those drafts into a focused journal entry (or two, if the router calls "both")
+6. Follow the voice, style, structure, and guardrails from the chosen skill(s)
 7. Add appropriate wikilinks to technical terms
-8. Save to `~/garden/entries/YYYY-MM-DD-slug.md`
+8. Save to `~/garden/journal/YYYY-MM-DD-slug.md`
 9. Set `draft: true` in frontmatter for review
 10. Run `pre-commit run mdformat --files ~/garden/entries/YYYY-MM-DD-slug.md` to format the entry
 
 ## Output Location
 
-Save the generated entry to: `~/garden/entries/YYYY-MM-DD-descriptive-slug.md`
+Save the generated entry to: `~/garden/journal/YYYY-MM-DD-descriptive-slug.md`
 
-The slug should be derived from the entry title (lowercase, hyphenated).
+The slug should be derived from the entry title (lowercase, hyphenated). For a "both" split, save
+two files and cross-link them with wikilinks.
 
 ## After Generation
 

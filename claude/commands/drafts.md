@@ -4,7 +4,10 @@ Show captured session drafts and suggest journal entries.
 
 ## Instructions
 
-1. List files in `~/garden/drafts/` (exclude subdirectories)
+1. List draft captures from the month folders: `~/garden/drafts/YYYY-MM/DD_HHMMSS.md`
+   (e.g. `find ~/garden/drafts -type f -path '*/[0-9][0-9][0-9][0-9]-[0-9][0-9]/*.md'`).
+   Drafts are grouped by month; do NOT read `archive/`, `gardening/`, or the top-level
+   `*-journal-plan.md` and working files.
 2. Read each draft's frontmatter (project, date) and content
 3. Group drafts by learning theme (not just project name)
 4. Suggest journal entries with summaries

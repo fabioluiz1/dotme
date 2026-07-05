@@ -9,10 +9,12 @@ set -euo pipefail
 
 DRAFTS_DIR="$HOME/garden/drafts"
 DATE=$(date +%Y-%m-%d)
-TIME=$(date +%H%M%S)
-DRAFT_FILE="$DRAFTS_DIR/${DATE}_${TIME}.md"
+MONTH=$(date +%Y-%m)          # drafts are grouped by month: drafts/YYYY-MM/
+DAY_TIME=$(date +%d_%H%M%S)   # file within the month folder: DD_HHMMSS.md
+MONTH_DIR="$DRAFTS_DIR/$MONTH"
+DRAFT_FILE="$MONTH_DIR/${DAY_TIME}.md"
 
-mkdir -p "$DRAFTS_DIR"
+mkdir -p "$MONTH_DIR"
 
 # Read hook metadata from stdin
 HOOK_INPUT=$(cat)
